@@ -4,34 +4,18 @@ import { Menu, X } from 'lucide-react';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showNavbar, setShowNavbar] = useState(true);
   const headerRef = useRef(null);
-  const logoRef = useRef(null);
-  const navRef = useRef(null);
   const lastScrollY = useRef(window.scrollY);
   const ticking = useRef(false);
-  // timeoutId removed
 
-  // Hide navbar on scroll down, show on scroll up
+  // Hide navbar on scroll down, show on scroll up 
   useEffect(() => {
     const updateNavbar = () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY > lastScrollY.current && currentScrollY > 0) {
-        // Animate navbar out (up)
-        gsap.to(headerRef.current, {
-          y: '-130%',
-          duration: 0.5,
-          ease: 'power3.inOut',
-        });
-        setShowNavbar(false);
+        gsap.to(headerRef.current, { y: '-130%', duration: 1.1, ease: 'easeInOut' });
       } else {
-        // Animate navbar in (down)
-        gsap.to(headerRef.current, {
-          y: '0%',
-          duration: 0.5,
-          ease: 'power3.inOut',
-        });
-        setShowNavbar(true);
+        gsap.to(headerRef.current, { y: '0%', duration: 1.1, ease: 'easeInOut' });
       }
       lastScrollY.current = currentScrollY;
       ticking.current = false;
@@ -43,13 +27,8 @@ export default function Header() {
       }
     };
     window.addEventListener('scroll', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-    };
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-// No header, logo, or nav animation
-
 
   const menuItems = [
     { href: '#about', label: 'About' },
@@ -62,33 +41,27 @@ export default function Header() {
   return (
     <header
       ref={headerRef}
-      className={"fixed top-[10px] left-1/2 -translate-x-1/2 z-50 w-[70vw] rounded-full bg-black shadow-lg px-4 sm:px-6 lg:px-8"}
-      style={{ paddingTop: 5 }}
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] lg:w-[70%] rounded-3xl bg-black/50 backdrop-blur-lg border border-white/10 shadow-lg"
     >
-      <div className="flex justify-between items-center py-1">
-        <div ref={logoRef} className="flex items-center space-x-2">
-          <img src="../public/Lumens_Logo.png" alt="" className="h-20 bg-cover" />
-        </div>
+      <div className="flex justify-between items-center py-3 px-4 sm:px-6">
+        <a href="#" className="flex items-center space-x-2">
+         
+          <img src="/Lumens.png" alt="Lumens Logo" className="h-13 bg-cover" />
+        </a>
 
         {/* Desktop Navigation */}
-        <nav ref={navRef} className="hidden md:flex space-x-8">
+        <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
           {menuItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="text-gray-700 hover:text-blue-600 transition-all duration-300 relative group text-lg"
-            >
+            <a key={item.href} href={item.href} className="text-gray-300 hover:text-white transition-colors duration-300 relative group text-lg">
               {item.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-800 to-purple-900 transition-all duration-300 group-hover:w-full"></span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 group-hover:w-full"></span>
             </a>
           ))}
         </nav>
 
+        {/* Desktop CTA */}
         <div className="hidden md:block">
-          <a
-            href="#contact"
-            className="bg-gradient-to-r from-blue-800 to-purple-900 text-white px-6 py-3 rounded-lg hover:from-blue-900 hover:to-purple-950 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-purple-900/30"
-          >
+          <a href="#contact" className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-5 py-2.5 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-800 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-purple-900/40">
             Get Quote
           </a>
         </div>
@@ -96,36 +69,37 @@ export default function Header() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden text-gray-700 transition-colors duration-300"
+          className="md:hidden text-gray-200 hover:text-white transition-colors duration-300 z-10"
+          aria-label="Toggle menu"
         >
-          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {isMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
         </button>
       </div>
 
-      {/* Mobile Navigation */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200 py-4 rounded-b-2xl">
-          <nav className="flex flex-col space-y-4">
-            {menuItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-gray-700 hover:text-blue-600 transition-colors duration-300"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
+     
+      <div 
+        className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out ${isMenuOpen ? 'max-h-96' : 'max-h-0'}`}
+      >
+        <nav className="flex flex-col items-center space-y-4 pt-2 pb-6">
+          {menuItems.map((item) => (
             <a
-              href="#contact"
-              className="bg-gradient-to-r from-blue-800 to-purple-900 text-white px-6 py-2 rounded-lg hover:from-blue-900 hover:to-purple-950 transition-all duration-300 inline-block text-center"
-              onClick={() => setIsMenuOpen(false)}
+              key={item.href}
+              href={item.href}
+              className="text-gray-200 text-lg font-medium hover:text-white transition-colors"
+              onClick={() => setIsMenuOpen(false)} // Close menu on click
             >
-              Get Quote
+              {item.label}
             </a>
-          </nav>
-        </div>
-      )}
+          ))}
+          <a
+            href="#contact"
+            className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-8 py-3 mt-4 rounded-lg font-semibold text-lg"
+            onClick={() => setIsMenuOpen(false)} // Close menu on click
+          >
+            Get Quote
+          </a>
+        </nav>
+      </div>
     </header>
   );
 }

@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+@layer utilities {
+  @keyframes scroll-down-indicator {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100%);
+    }
+  }
+
+  .animate-scroll-down-indicator {
+    animation: scroll-down-indicator 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+}
+
