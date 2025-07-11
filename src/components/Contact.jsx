@@ -9,14 +9,14 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function Contact() {
   const [formData, setFormData] = useState({
-    name: '', // Will map to 'firstname' in HubSpot
+    name: '',
     email: '',
     phone: '',
-    businessType: '', // This state key remains 'businessType'
+    businessType: '',
     message: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const sectionRef = useRef(null);
 
@@ -85,7 +85,7 @@ export default function Contact() {
   useLayoutEffect(() => {
     if (isSubmitted) {
       const successMsg = document.querySelector('.success-message');
-      if (successMsg) { // Ensure element exists before animating
+      if (successMsg) {
         gsap.fromTo(successMsg, 
           { y: -20, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
@@ -94,46 +94,25 @@ export default function Contact() {
     }
   }, [isSubmitted]);
 
-  // --- HubSpot API Configuration ---
-  const HUBSPOT_PORTAL_ID = '243272332'; // From your screenshot
-  const HUBSPOT_FORM_GUID = '1ff828bf-c049-41e3-b223-529fe3d6e968'; // From your screenshot
-
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default browser form submission
-    setIsSubmitting(true); // Disable button during submission
-    setIsSubmitted(false); // Reset submission status for new attempts
+    e.preventDefault();
+    setIsSubmitting(true);
+    setIsSubmitted(false);
 
-    const formUrl = `https://api.hsforms.com/submissions/v3/portal/${HUBSPOT_PORTAL_ID}/forms/${HUBSPOT_FORM_GUID}`;
-
-    // Map your form data to HubSpot's expected field names
-    // Ensure these 'name' values match the internal property names in HubSpot
-    const fields = [
-      { name: 'firstname', value: formData.name }, // Mapping 'name' to 'firstname' in HubSpot
-      { name: 'email', value: formData.email },
-      { name: 'phone', value: formData.phone },
-      { name: 'business_type', value: formData.businessType }, // <--- CHANGED HERE: Mapped to 'business_type'
-      { name: 'message', value: formData.message }
-    ];
-
-    const data = {
-      fields: fields,
-      context: { // Optional: Add context for HubSpot tracking (e.g., page where form was submitted)
-        pageUri: window.location.href,
-        pageName: document.title
-      }
-    };
+    const proxyUrl = '/api/submit-hubspot-form'; 
 
     try {
-      const response = await fetch(formUrl, {
+      const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        // Send formData object as the body
+        body: JSON.stringify({ formData: formData })
       });
 
       if (response.ok) {
-        setIsSubmitted(true); // Show success message animation
+        setIsSubmitted(true);
         toast.success("Thanks! We'll be in touch soon.", {
           position: "top-center",
           autoClose: 4000,
@@ -144,11 +123,10 @@ export default function Contact() {
           progress: undefined,
           theme: "dark",
         });
-        // Reset form data after successful submission
         setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
       } else {
         const errorData = await response.json();
-        console.error('HubSpot form submission error:', errorData);
+        console.error('Proxy submission error:', errorData);
         toast.error("Oops! Something went wrong. Please try again.", {
           position: "top-center",
           autoClose: 4000,
@@ -173,7 +151,7 @@ export default function Contact() {
         theme: "dark",
       });
     } finally {
-      setIsSubmitting(false); // Re-enable button after submission attempt (whether success or failure)
+      setIsSubmitting(false);
     }
   };
 
