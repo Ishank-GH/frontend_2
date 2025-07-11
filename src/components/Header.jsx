@@ -31,7 +31,6 @@ export default function Header() {
   }, []);
 
   const menuItems = [
-    { href: '#about', label: 'About' },
     { href: '#services', label: 'Services' },
     { href: '#why-choose', label: 'Why Choose Us' },
     { href: '#process', label: 'Process' },
