@@ -77,8 +77,6 @@ const Hero = ({
   headlineCta = "We Build Websites That Win Customers.",
   subtitle = "We specialize in crafting stunning, high-performance websites for local businesses. Our affordable, results-driven solutions are designed to attract more local customers and put your brand on the map.",
   primaryButtonText = "Get a Free Quote",
-  onPrimaryClick,
-
   animationDelay = 200
 }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -156,8 +154,15 @@ const Hero = ({
           <div 
             className={`flex justify-center items-center transition-all duration-1000 delay-900 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
           >
-            <button 
-              onClick={onPrimaryClick}
+            <button
+              onClick={() => {
+                setTimeout(() => {
+                  const el = document.querySelector('#contact');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 0);
+              }}
               className="group relative px-8 py-3.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black shadow-lg shadow-purple-900/50"
             >
               <div className="relative flex items-center gap-3">

@@ -2,18 +2,21 @@ import React, { useState, useRef, useLayoutEffect } from 'react';
 import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function Contact() {
   const [formData, setFormData] = useState({
-    name: '',
+    name: '', // Will map to 'firstname' in HubSpot
     email: '',
     phone: '',
-    businessType: '',
+    businessType: '', // This state key remains 'businessType'
     message: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission loading
   
   const sectionRef = useRef(null);
 
@@ -82,20 +85,96 @@ export default function Contact() {
   useLayoutEffect(() => {
     if (isSubmitted) {
       const successMsg = document.querySelector('.success-message');
-      gsap.fromTo(successMsg, 
-        { y: -20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
-      );
+      if (successMsg) { // Ensure element exists before animating
+        gsap.fromTo(successMsg, 
+          { y: -20, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
+        );
+      }
     }
   }, [isSubmitted]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    setIsSubmitted(true);
-    // Reset form
-    setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
-    setTimeout(() => setIsSubmitted(false), 5000);
+  // --- HubSpot API Configuration ---
+  const HUBSPOT_PORTAL_ID = '243272332'; // From your screenshot
+  const HUBSPOT_FORM_GUID = '1ff828bf-c049-41e3-b223-529fe3d6e968'; // From your screenshot
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default browser form submission
+    setIsSubmitting(true); // Disable button during submission
+    setIsSubmitted(false); // Reset submission status for new attempts
+
+    const formUrl = `https://api.hsforms.com/submissions/v3/portal/${HUBSPOT_PORTAL_ID}/forms/${HUBSPOT_FORM_GUID}`;
+
+    // Map your form data to HubSpot's expected field names
+    // Ensure these 'name' values match the internal property names in HubSpot
+    const fields = [
+      { name: 'firstname', value: formData.name }, // Mapping 'name' to 'firstname' in HubSpot
+      { name: 'email', value: formData.email },
+      { name: 'phone', value: formData.phone },
+      { name: 'business_type', value: formData.businessType }, // <--- CHANGED HERE: Mapped to 'business_type'
+      { name: 'message', value: formData.message }
+    ];
+
+    const data = {
+      fields: fields,
+      context: { // Optional: Add context for HubSpot tracking (e.g., page where form was submitted)
+        pageUri: window.location.href,
+        pageName: document.title
+      }
+    };
+
+    try {
+      const response = await fetch(formUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (response.ok) {
+        setIsSubmitted(true); // Show success message animation
+        toast.success("Thanks! We'll be in touch soon.", {
+          position: "top-center",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+        // Reset form data after successful submission
+        setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
+      } else {
+        const errorData = await response.json();
+        console.error('HubSpot form submission error:', errorData);
+        toast.error("Oops! Something went wrong. Please try again.", {
+          position: "top-center",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+        });
+      }
+    } catch (error) {
+      console.error('Network or unexpected error:', error);
+      toast.error("Network error. Please check your connection and try again.", {
+        position: "top-center",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+    } finally {
+      setIsSubmitting(false); // Re-enable button after submission attempt (whether success or failure)
+    }
   };
 
   const handleChange = (e) => {
@@ -109,13 +188,13 @@ export default function Contact() {
     {
       icon: Phone,
       title: 'Phone',
-      details: '+91 98765 43210',
+      details: '+91 77768 82468',
       subtitle: 'Mon-Sat: 10 AM - 7 PM'
     },
     {
       icon: Mail,
       title: 'Email',
-      details: 'hello@lumens.agency',
+      details: 'lumens.agency.in@gmail.com',
       subtitle: 'We reply within 24 hours'
     },
     {
@@ -193,17 +272,6 @@ export default function Contact() {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-lg p-8">
               <h3 className="text-2xl font-bold text-white mb-6">Send us a Message</h3>
               
-              {isSubmitted && (
-                <div className="success-message bg-blue-800/30 border border-blue-800/50 rounded-lg p-4 mb-6">
-                  <div className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-blue-400 mr-2" />
-                    <span className="text-blue-300 font-medium">
-                      Thanks! We'll be in touch soon.
-                    </span>
-                  </div>
-                </div>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className='form-field'>
@@ -241,15 +309,49 @@ export default function Contact() {
                 </div>
 
                 <div className='form-field'>
-                  <button type="submit" className="w-full bg-gradient-to-r from-blue-800 to-purple-900 text-white px-8 py-4 rounded-lg hover:from-blue-900 hover:to-purple-950 transition-all duration-300 transform hover:scale-105 font-semibold flex items-center justify-center shadow-lg shadow-purple-900/30">
-                    <Send className="mr-2 h-5 w-5" />
-                    Send Message & Get Free Quote
+                  <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-blue-800 to-purple-900 text-white px-8 py-4 rounded-lg hover:from-blue-900 hover:to-purple-950 transition-all duration-300 transform hover:scale-105 font-semibold flex items-center justify-center shadow-lg shadow-purple-900/30">
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-5 w-5" />
+                        Send Message & Get Free Quote
+                      </>
+                    )}
                   </button>
                 </div>
+                {isSubmitted && (
+                  <div className="success-message bg-blue-800/30 border border-blue-800/50 rounded-lg p-4 mt-4">
+                    <div className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-blue-400 mr-2" />
+                      <span className="text-blue-300 font-medium">
+                        Thanks! We'll be in touch soon.
+                      </span>
+                    </div>
+                  </div>
+                )}
               </form>
             </div>
           </div>
         </div>
+        <ToastContainer
+          position="bottom-center" // Move to bottom so it doesn't hide behind header
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
       </div>
     </section>
   );
