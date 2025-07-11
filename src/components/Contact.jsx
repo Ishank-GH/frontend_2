@@ -125,10 +125,25 @@ export default function Contact() {
         });
         setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
       } else {
-        const errorData = await response.json();
-        console.error('Proxy submission error:', errorData);
-        toast.error("Oops! Something went wrong. Please try again.", {
-          position: "top-center",
+        let errorMsg = "Oops! Something went wrong. Please try again.";
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const data = await response.json();
+            if (data && data.message) errorMsg = data.message;
+          } catch {
+            // fallback to default errorMsg
+          }
+        } else {
+          try {
+            const text = await response.text();
+            if (text) errorMsg = text;
+          } catch {
+            // fallback to default errorMsg
+          }
+        }
+        toast.error(errorMsg, {
+          position: "bottom-center",
           autoClose: 4000,
           hideProgressBar: false,
           closeOnClick: true,
