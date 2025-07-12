@@ -1,5 +1,5 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
-import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ToastContainer, toast } from 'react-toastify';
@@ -16,11 +16,11 @@ export default function Contact() {
     businessType: '',
     message: ''
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const sectionRef = useRef(null);
 
+  // This effect handles all the animations and is unchanged from your original code.
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -83,70 +83,36 @@ export default function Contact() {
     return () => ctx.revert();
   }, []);
 
-  useLayoutEffect(() => {
-    if (isSubmitted) {
-      const successMsg = document.querySelector('.success-message');
-      if (successMsg) {
-        gsap.fromTo(successMsg, 
-          { y: -20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }
-        );
-      }
-    }
-  }, [isSubmitted]);
-
+  // This is the new, robust handleSubmit function for the Netlify setup.
   const handleSubmit = async (e) => {
+    // 1. Prevent the page from reloading on form submission
     e.preventDefault();
+    // 2. Set the loading state for the button
     setIsSubmitting(true);
-    setIsSubmitted(false);
-
-    const proxyUrl = '/api/submit-hubspot-form';
-
+  
+    // 3. Define the API endpoint URL we set up in netlify.toml
+    const proxyUrl = '/api/contact';
+  
     try {
+      // 4. Send the form data to the Netlify function using axios
       const response = await axios.post(proxyUrl, { formData });
+      
+      // 5. Handle a successful response from our API
       if (response.data && response.data.success) {
-        setIsSubmitted(true);
-        toast.success("Thanks! We'll be in touch soon.", {
-          position: "top-center",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-        });
+        toast.success("Thanks! We'll be in touch soon.", { position: "top-center" });
+        // Clear the form fields
         setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
       } else {
-        let errorMsg = "Oops! Something went wrong. Please try again.";
-        if (response.data && response.data.message) errorMsg = response.data.message;
-        toast.error(errorMsg, {
-          position: "bottom-center",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-        });
+        // Handle cases where the API returns an error message (e.g., validation)
+        const errorMsg = response.data?.message || "Oops! Something went wrong.";
+        toast.error(errorMsg, { position: "top-center" });
       }
     } catch (error) {
-      let errorMsg = "Network error. Please check your connection and try again.";
-      if (error.response && error.response.data && error.response.data.message) {
-        errorMsg = error.response.data.message;
-      }
-      toast.error(errorMsg, {
-        position: "top-center",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-      });
+      // 6. Handle network errors or server crashes (e.g., 404, 500)
+      const errorMsg = error.response?.data?.message || "Submission failed. Please try again.";
+      toast.error(errorMsg, { position: "top-center" });
     } finally {
+      // 7. ALWAYS set the loading state back to false, no matter what happens
       setIsSubmitting(false);
     }
   };
@@ -187,7 +153,7 @@ export default function Contact() {
 
   return (
     <section ref={sectionRef} id="contact" className="py-24 relative overflow-hidden min-h-screen flex items-center bg-black bg-gradient-to-tl from-gray-900 via-black to-gray-900">
-      {/* === UNIFIED BACKGROUND START === */}
+      {/* Background elements are unchanged */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-tl from-gray-900 via-black to-gray-900"></div>
       <div className="absolute inset-0 -z-10 opacity-30 pointer-events-none">
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
@@ -200,7 +166,6 @@ export default function Contact() {
           backgroundSize: '50px 50px'
         }}></div>
       </div>
-      {/* === UNIFIED BACKGROUND END === */}
 
       <div className="max-w-6xl mx-auto w-full px-4 sm:px-8 lg:px-12 relative z-10">
          <div className="text-center mb-16">
@@ -300,22 +265,12 @@ export default function Contact() {
                     )}
                   </button>
                 </div>
-                {isSubmitted && (
-                  <div className="success-message bg-blue-800/30 border border-blue-800/50 rounded-lg p-4 mt-4">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-blue-400 mr-2" />
-                      <span className="text-blue-300 font-medium">
-                        Thanks! We'll be in touch soon.
-                      </span>
-                    </div>
-                  </div>
-                )}
               </form>
             </div>
           </div>
         </div>
         <ToastContainer
-          position="bottom-center" // Move to bottom so it doesn't hide behind header
+          position="top-center"
           autoClose={4000}
           hideProgressBar={false}
           newestOnTop={false}

@@ -1,0 +1,23 @@
+# This file tells Netlify how to build and serve your site.
+
+[build]
+  # Command to build your Vite frontend
+  command = "npm run build"
+  # The directory where the built frontend files are located
+  publish = "dist"
+  # The directory where your serverless functions are located
+  functions = "netlify/functions"
+
+# This rule makes your function at "/.netlify/functions/contact"
+# available at the user-friendly URL "/api/contact".
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# This is the standard rule for Single-Page Apps (like React/Vite).
+# It ensures that any direct navigation (e.g., to /contact) serves your app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
