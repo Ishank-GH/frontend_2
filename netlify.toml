@@ -1,26 +1,9 @@
-# This is the definitive Netlify configuration file.
-
+# This is the new, minimal configuration. It has NO redirects.
 [build]
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
+# This section is still crucial to bundle axios correctly.
 [functions]
-  # This line is crucial and correctly bundles axios with your function.
   node_bundler = "esbuild"
-
-# --- CORRECTED REDIRECTS SECTION ---
-
-# Rule 1: A specific, unambiguous rule for your API endpoint.
-# This MUST come before the general SPA rule.
-[[redirects]]
-  from = "/api/contact"
-  to = "/.netlify/functions/contact"
-  status = 200
-
-# Rule 2: The standard "catch-all" rule for your Single-Page App.
-# This rule will now only apply to requests that did not match the rule above.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

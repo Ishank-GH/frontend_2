@@ -91,7 +91,7 @@ export default function Contact() {
     setIsSubmitting(true);
   
     // 3. Define the API endpoint URL we set up in netlify.toml
-    const proxyUrl = '/api/contact';
+     const proxyUrl = '/.netlify/functions/contact';
   
     try {
       // 4. Send the form data to the Netlify function using axios
