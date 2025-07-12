@@ -1,6 +1,7 @@
+// --- START OF FILE /netlify/functions/contact.js (HARDENED & CRASH-PROOF) ---
 import axios from 'axios';
 
-export const handler = async (event, context) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -8,17 +9,26 @@ export const handler = async (event, context) => {
     };
   }
 
+  // --- Check for Environment Variables ---
   const { HUBSPOT_PORTAL_ID, HUBSPOT_FORM_GUID } = process.env;
   if (!HUBSPOT_PORTAL_ID || !HUBSPOT_FORM_GUID) {
-    return { statusCode: 500, body: JSON.stringify({ success: false, message: 'Server config error.' }) };
+    console.error("Server configuration error: HubSpot environment variables are not set.");
+    return { statusCode: 500, body: JSON.stringify({ success: false, message: 'Server configuration error.' }) };
   }
   
-  // Parse event.body because it's a string.
-  const { formData } = JSON.parse(event.body);
-  if (!formData) {
-    return { statusCode: 400, body: JSON.stringify({ success: false, message: 'Form data missing.' }) };
+  // --- Safely Parse the Request Body ---
+  let formData;
+  try {
+    // This prevents a crash if the body is empty or malformed.
+    const parsedBody = JSON.parse(event.body);
+    formData = parsedBody.formData;
+    if (!formData) throw new Error("formData key is missing.");
+  } catch (error) {
+    console.error("Failed to parse request body:", error);
+    return { statusCode: 400, body: JSON.stringify({ success: false, message: 'Bad request: Invalid form data.' }) };
   }
   
+  // --- Prepare HubSpot Submission ---
   const HUBSPOT_API_URL = `https://api.hsforms.com/submissions/v3/portal/${HUBSPOT_PORTAL_ID}/forms/${HUBSPOT_FORM_GUID}`;
 
   const fields = [
@@ -31,19 +41,20 @@ export const handler = async (event, context) => {
 
   const submissionData = { fields, context: { pageUri: event.headers.referer } };
 
+  // --- Safely Make the Request to HubSpot ---
   try {
     await axios.post(HUBSPOT_API_URL, submissionData);
-    // On success, return a 200 status code.
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, message: 'Submission successful!' })
     };
   } catch (error) {
+    // This prevents a crash if axios fails in an unexpected way.
+    const statusCode = error.response?.status || 500;
     const errorMessage = error.response?.data?.message || 'Failed to submit to HubSpot.';
-    console.error('HubSpot API Error:', error.response?.data || error.message);
-    // On failure, return the error status code.
+    console.error(`HubSpot API Error (${statusCode}):`, errorMessage);
     return {
-      statusCode: error.response?.status || 500,
+      statusCode: statusCode,
       body: JSON.stringify({ success: false, message: errorMessage })
     };
   }
