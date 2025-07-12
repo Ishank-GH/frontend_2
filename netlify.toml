@@ -1,24 +1,25 @@
 # This is the definitive Netlify configuration file.
 
-# [build] section: Tells Netlify how to build your frontend.
 [build]
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
-# [functions] section: Solves the "axios" not found error.
 [functions]
+  # This line is crucial and correctly bundles axios with your function.
   node_bundler = "esbuild"
 
-# [[redirects]] for the API: This MUST come first.
-# It proxies requests from "/api/..." to your function.
+# --- CORRECTED REDIRECTS SECTION ---
+
+# Rule 1: A specific, unambiguous rule for your API endpoint.
+# This MUST come before the general SPA rule.
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/contact"
+  to = "/.netlify/functions/contact"
   status = 200
 
-# [[redirects]] for the React App: This MUST come last.
-# This is the "catch-all" rule for your single-page app.
+# Rule 2: The standard "catch-all" rule for your Single-Page App.
+# This rule will now only apply to requests that did not match the rule above.
 [[redirects]]
   from = "/*"
   to = "/index.html"
