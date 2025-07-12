@@ -1,10 +1,10 @@
+// We no longer need axios for Netlify Forms.
 import React, { useState, useRef, useLayoutEffect } from 'react';
 import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -20,7 +20,7 @@ export default function Contact() {
   
   const sectionRef = useRef(null);
 
-  // This effect handles all the animations and is unchanged from your original code.
+  // Your animation code is unchanged.
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -30,99 +30,51 @@ export default function Contact() {
           toggleActions: 'play none none none',
         }
       });
-
-      tl.from('.contact-title', {
-        opacity: 0,
-        y: 40,
-        duration: 0.8,
-        ease: 'power3.out'
-      }).from('.contact-subtitle', {
-        opacity: 0,
-        y: 30,
-        duration: 0.8,
-        ease: 'power3.out'
-      }, '-=0.5');
-
-      tl.from('.contact-info-col', {
-        opacity: 0,
-        x: -80,
-        duration: 1,
-        ease: 'power3.out'
-      }, '-=0.6').from('.contact-form-col', {
-        opacity: 0,
-        x: 80,
-        duration: 1,
-        ease: 'power3.out'
-      }, '<');
-
-      gsap.from('.contact-info-item', {
-        scrollTrigger: {
-          trigger: '.contact-info-col',
-          start: 'top 70%',
-        },
-        opacity: 0,
-        x: -30,
-        stagger: 0.15,
-        duration: 0.6,
-        ease: 'power2.out'
-      });
-      
-      gsap.from('.form-field', {
-        scrollTrigger: {
-          trigger: '.contact-form-col',
-          start: 'top 70%',
-        },
-        opacity: 0,
-        y: 30,
-        stagger: 0.1,
-        duration: 0.5,
-        ease: 'power2.out'
-      });
-
+      tl.from('.contact-title', { opacity: 0, y: 40, duration: 0.8, ease: 'power3.out' })
+        .from('.contact-subtitle', { opacity: 0, y: 30, duration: 0.8, ease: 'power3.out' }, '-=0.5');
+      tl.from('.contact-info-col', { opacity: 0, x: -80, duration: 1, ease: 'power3.out' }, '-=0.6')
+        .from('.contact-form-col', { opacity: 0, x: 80, duration: 1, ease: 'power3.out' }, '<');
+      gsap.from('.contact-info-item', { scrollTrigger: { trigger: '.contact-info-col', start: 'top 70%' }, opacity: 0, x: -30, stagger: 0.15, duration: 0.6, ease: 'power2.out' });
+      gsap.from('.form-field', { scrollTrigger: { trigger: '.contact-form-col', start: 'top 70%' }, opacity: 0, y: 30, stagger: 0.1, duration: 0.5, ease: 'power2.out' });
     }, sectionRef);
     return () => ctx.revert();
   }, []);
 
-  // This is the new, robust handleSubmit function for the Netlify setup.
-  const handleSubmit = async (e) => {
-    // 1. Prevent the page from reloading on form submission
-    e.preventDefault();
-    // 2. Set the loading state for the button
-    setIsSubmitting(true);
-  
-    // 3. Define the API endpoint URL we set up in netlify.toml
-     const proxyUrl = '/.netlify/functions/contact';
-  
-    try {
-      // 4. Send the form data to the Netlify function using axios
-      const response = await axios.post(proxyUrl, { formData });
-      
-      // 5. Handle a successful response from our API
-      if (response.data && response.data.success) {
-        toast.success("Thanks! We'll be in touch soon.", { position: "top-center" });
-        // Clear the form fields
-        setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
-      } else {
-        // Handle cases where the API returns an error message (e.g., validation)
-        const errorMsg = response.data?.message || "Oops! Something went wrong.";
-        toast.error(errorMsg, { position: "top-center" });
-      }
-    } catch (error) {
-      // 6. Handle network errors or server crashes (e.g., 404, 500)
-      const errorMsg = error.response?.data?.message || "Submission failed. Please try again.";
-      toast.error(errorMsg, { position: "top-center" });
-    } finally {
-      // 7. ALWAYS set the loading state back to false, no matter what happens
-      setIsSubmitting(false);
-    }
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  // THIS IS THE NEW, SIMPLIFIED HANDLESUBMIT FOR NETLIFY FORMS
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // This converts our React state into a format Netlify can read.
+    const body = new URLSearchParams({
+      'form-name': 'contact', // This must match the 'name' attribute on your form
+      ...formData
+    }).toString();
+
+    // We post the data directly to the current page. Netlify's build system
+    // sees the `data-netlify="true"` attribute and intercepts the submission.
+    fetch("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    })
+      .then(() => {
+        // This is our "optimistic" success.
+        toast.success("Thanks! We'll be in touch soon.", { position: "top-center" });
+        setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
+      })
+      .catch((error) => {
+        // This will only happen if there's a serious network error.
+        toast.error("Oops! Something went wrong. Please try again.");
+        console.error("Netlify Form Submission Error:", error);
+      })
+      .finally(() => setIsSubmitting(false));
   };
+
 
   const contactInfo = [
     {
@@ -179,7 +131,7 @@ export default function Contact() {
         </div>
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-16 items-start">
-          {/* Contact Information */}
+          {/* Your Contact Information column is now correctly rendered */}
           <div className="contact-info-col">
             <div className="bg-gradient-to-br from-blue-900 to-purple-950 rounded-2xl p-8 text-white mb-8 shadow-lg shadow-purple-900/30">
               <h3 className="text-2xl font-bold mb-6">Let's Start a Conversation</h3>
@@ -206,12 +158,28 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* Contact Form */}
+          {/* Contact Form Column */}
           <div className="contact-form-col mt-12 lg:mt-0">
             <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-lg p-8">
               <h3 className="text-2xl font-bold text-white mb-6">Send us a Message</h3>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {/* VVV THESE ARE THE CRITICAL CHANGES FOR NETLIFY FORMS VVV */}
+              <form
+                name="contact"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="bot-field"
+                onSubmit={handleSubmit}
+                className="space-y-6"
+              >
+                {/* This hidden input is required for Netlify to detect the form */}
+                <input type="hidden" name="form-name" value="contact" />
+                {/* This hidden field is for spam prevention */}
+                <p className="hidden">
+                  <label>Don’t fill this out if you’re human: <input name="bot-field" onChange={handleChange} /></label>
+                </p>
+
+                {/* All your form fields remain exactly the same */}
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className='form-field'>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Full Name *</label>

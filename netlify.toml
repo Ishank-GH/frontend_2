@@ -1,9 +1,0 @@
-# This is the new, minimal configuration. It has NO redirects.
-[build]
-  command = "npm run build"
-  publish = "dist"
-  functions = "netlify/functions"
-
-# This section is still crucial to bundle axios correctly.
-[functions]
-  node_bundler = "esbuild"
