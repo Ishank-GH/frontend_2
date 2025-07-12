@@ -4,6 +4,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import axios from 'axios';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -99,19 +100,11 @@ export default function Contact() {
     setIsSubmitting(true);
     setIsSubmitted(false);
 
-    const proxyUrl = '/api/submit-hubspot-form'; 
+    const proxyUrl = '/api/submit-hubspot-form';
 
     try {
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        // Send formData object as the body
-        body: JSON.stringify({ formData: formData })
-      });
-
-      if (response.ok) {
+      const response = await axios.post(proxyUrl, { formData });
+      if (response.data && response.data.success) {
         setIsSubmitted(true);
         toast.success("Thanks! We'll be in touch soon.", {
           position: "top-center",
@@ -126,22 +119,7 @@ export default function Contact() {
         setFormData({ name: '', email: '', phone: '', businessType: '', message: '' });
       } else {
         let errorMsg = "Oops! Something went wrong. Please try again.";
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          try {
-            const data = await response.json();
-            if (data && data.message) errorMsg = data.message;
-          } catch {
-            // fallback to default errorMsg
-          }
-        } else {
-          try {
-            const text = await response.text();
-            if (text) errorMsg = text;
-          } catch {
-            // fallback to default errorMsg
-          }
-        }
+        if (response.data && response.data.message) errorMsg = response.data.message;
         toast.error(errorMsg, {
           position: "bottom-center",
           autoClose: 4000,
@@ -154,8 +132,11 @@ export default function Contact() {
         });
       }
     } catch (error) {
-      console.error('Network or unexpected error:', error);
-      toast.error("Network error. Please check your connection and try again.", {
+      let errorMsg = "Network error. Please check your connection and try again.";
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMsg = error.response.data.message;
+      }
+      toast.error(errorMsg, {
         position: "top-center",
         autoClose: 4000,
         hideProgressBar: false,
