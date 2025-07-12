@@ -1,26 +1,24 @@
-# This is the final, correct netlify.toml file.
+# This is the definitive Netlify configuration file.
 
+# [build] section: Tells Netlify how to build your frontend.
 [build]
-  # Command to build your Vite frontend
   command = "npm run build"
-  # The directory where the built frontend files are located
   publish = "dist"
-  # The directory where your serverless functions are located
   functions = "netlify/functions"
 
-# This new section solves the dependency issue.
+# [functions] section: Solves the "axios" not found error.
 [functions]
-  # This tells Netlify to use a modern bundler that will automatically
-  # include dependencies like 'axios' from your main package.json.
   node_bundler = "esbuild"
 
-# This rule makes your function available at the user-friendly URL "/api/contact".
+# [[redirects]] for the API: This MUST come first.
+# It proxies requests from "/api/..." to your function.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# This is the standard rule for Single-Page Apps (like React/Vite).
+# [[redirects]] for the React App: This MUST come last.
+# This is the "catch-all" rule for your single-page app.
 [[redirects]]
   from = "/*"
   to = "/index.html"
