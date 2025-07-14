@@ -8,7 +8,7 @@ export default function Process() {
   const timelineRef = useRef(null);
   const [activeStep, setActiveStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
-  const stepRefs = useRef([]);
+  const animationRefs = useRef([]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -16,6 +16,18 @@ export default function Process() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setIsVisible(true);
+            // Animate the title once it's visible
+            gsap.fromTo(
+              titleRef.current,
+              { opacity: 0, y: 20 },
+              { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }
+            );
+            // Animate the timeline steps once they are visible
+            gsap.fromTo(
+              '.process-step',
+              { opacity: 0, y: 30 },
+              { opacity: 1, y: 0, duration: 0.6, stagger: 0.15, ease: 'power2.out', scrollTrigger: { trigger: timelineRef.current, start: 'top 80%' } }
+            );
           }
         });
       },
@@ -27,15 +39,15 @@ export default function Process() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    if (!stepRefs.current[activeStep]) return;
-    // Animate the newly active step in
-    gsap.fromTo(
-      stepRefs.current[activeStep],
-      { opacity: 0.7, y: 24 },
-      { opacity: 1, y: 0, duration: 0.35, ease: 'power1.inOut' }
-    );
-  
+   useEffect(() => {
+    animationRefs.current.forEach((timeline, index) => {
+      // Play or reverse the timeline based on the active step
+      if (index === activeStep) {
+        timeline.play();
+      } else {
+        timeline.reverse();
+      }
+    });
   }, [activeStep]);
 
   const steps = [
@@ -131,9 +143,36 @@ export default function Process() {
     }
   ];
 
+   // Callback ref to build the GSAP timelines once elements are rendered
+  const setupAnimation = (element, index) => {
+    if (element && !animationRefs.current[index]) {
+      const container = element.querySelector('.details-container');
+      const content = element.querySelector('.details-content');
+
+      // Create a paused GSAP timeline for each step
+      const tl = gsap.timeline({ paused: true });
+
+      tl
+        // 1. Animate the grid-template-rows for super smooth height transition
+        .to(container, {
+          gridTemplateRows: '1fr',
+          duration: 0.7,
+          ease: 'expo.out'
+        })
+        // 2. Animate the content's opacity and position for a fade-in-up effect
+        .to(content, {
+          y: 0,
+          opacity: 1,
+          duration: 0.5,
+          ease: 'power3.out'
+        }, "-=0.5"); // Start this animation slightly before the first one ends
+
+      animationRefs.current[index] = tl;
+    }
+  };
+
   return (
     <section ref={sectionRef} id="process" className="py-20 relative overflow-hidden min-h-screen bg-black bg-gradient-to-tl from-gray-900 via-black to-gray-900">
-      {/* === UNIFIED BACKGROUND START === */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-tl from-gray-900 via-black to-gray-900"></div>
       <div className="absolute inset-0 -z-10 opacity-30 pointer-events-none">
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
@@ -146,14 +185,11 @@ export default function Process() {
           backgroundSize: '50px 50px'
         }}></div>
       </div>
-      {/* === UNIFIED BACKGROUND END === */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div 
           ref={titleRef} 
-          className={`text-center mb-16 transition-all duration-1000 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}
+          className="text-center mb-16 opacity-0" // Start as invisible
         >
           <div className="flex items-center justify-center mb-4">
             <Sparkles className="h-8 w-8 text-blue-400 mr-2 animate-pulse" />
@@ -177,7 +213,6 @@ export default function Process() {
         </div>
 
         <div ref={timelineRef} className="relative">
-          {/* Enhanced timeline line */}
           <div className="timeline-line hidden lg:block absolute left-1/2 transform -translate-x-px h-full w-1 origin-top rounded-full overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-blue-600/30 via-purple-600/30 to-cyan-600/30 rounded-full"></div>
             <div 
@@ -191,20 +226,16 @@ export default function Process() {
           
           <div className="space-y-12 lg:space-y-16">
             {steps.map((step, index) => (
-              <div
+                  <div
+                ref={(el) => setupAnimation(el, index)}
                 key={index}
-                ref={el => stepRefs.current[index] = el}
-                className={`process-step relative lg:grid lg:grid-cols-2 lg:gap-12 items-center ${
-                  index % 2 === 0 ? '' : 'lg:grid-flow-col-dense'
-                } ${
-                  isVisible ? '' : 'opacity-0 translate-y-10'
-                }`}
-                style={{
-                  perspective: '1000px',
-                }}
+                className="process-step relative lg:grid lg:grid-cols-2 lg:gap-12 items-center"
+                style={{ perspective: '1000px' }}
+                // FOR DESKTOP: Hovering over the step makes it active.
                 onMouseEnter={() => setActiveStep(index)}
+                // FOR MOBILE & DESKTOP: Clicking/tapping the step makes it active.
+                onClick={() => setActiveStep(index)}
               >
-                {/* Enhanced timeline number */}
                 <div className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 -translate-y-4 z-20">
                   <div className={`relative bg-gradient-to-br ${step.color} text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-lg shadow-2xl transition-all duration-500 ${
                     index === activeStep ? 'scale-125 shadow-blue-500/50' : 'scale-100'
@@ -223,19 +254,10 @@ export default function Process() {
                 </div>
 
                 {/* Enhanced content card */}
-                <div className={`${index % 2 === 0 ? 'lg:text-right' : 'lg:col-start-2'}`}>
-                  <div className={`relative backdrop-blur-xl bg-gradient-to-br from-gray-900/90 to-gray-800/90 border rounded-2xl p-8 shadow-2xl transition-all duration-500 overflow-hidden group ${
-                    index === activeStep 
-                      ? 'border-blue-500/50 shadow-blue-500/20 scale-105' 
-                      : 'border-gray-700/50 hover:border-gray-600/50 hover:scale-102'
-                  }`}>
+               <div className={`${index % 2 === 0 ? 'lg:text-right' : 'lg:col-start-2'}`}>
+                  <div className={`relative backdrop-blur-xl bg-gradient-to-br from-gray-900/90 to-gray-800/90 border rounded-2xl p-8 shadow-2xl transition-all duration-500 overflow-hidden group ${ index === activeStep ? 'border-blue-500/50 shadow-blue-500/20 scale-105' : 'border-gray-700/50 hover:border-gray-600/50 hover:scale-102' }`}>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${step.bgColor} rounded-2xl transition-opacity duration-500 ${ index === activeStep ? 'opacity-100' : 'opacity-0' }`}></div>
                     
-                    {/* Dynamic background gradient */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${step.bgColor} rounded-2xl transition-opacity duration-500 ${
-                      index === activeStep ? 'opacity-100' : 'opacity-0'
-                    }`}></div>
-                    
-                    {/* Content */}
                     <div className="relative z-10">
                       <div className={`flex items-center mb-6 ${index % 2 === 0 ? 'lg:justify-end' : ''}`}>
                         <div className={`bg-gradient-to-br ${step.color} w-14 h-14 rounded-xl flex items-center justify-center mr-4 shadow-lg transition-all duration-300 ${
@@ -250,33 +272,27 @@ export default function Process() {
                           </span>
                         </div>
                       </div>
-                      
                       <p className="text-gray-300 mb-6 leading-relaxed">{step.description}</p>
                       
-                      {/* Enhanced expandable details */}
-                      <div className={`overflow-hidden transition-all duration-700 ${
-                        index === activeStep ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                      }`}>
-                        <div className="bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm">
-                          <ul className="space-y-3">
-                            {step.details.map((detail, idx) => (
-                              <li key={idx} className={`flex items-center text-sm text-gray-300 ${
-                                index % 2 === 0 ? 'lg:justify-end' : ''
-                              }`}>
-                                <div className={`w-2 h-2 bg-gradient-to-r ${step.color} rounded-full ${
-                                  index % 2 === 0 ? 'lg:order-2 lg:ml-3 mr-3' : 'mr-3'
-                                } animate-pulse`}></div>
-                                <span className={`${index % 2 === 0 ? 'lg:text-right' : ''} font-medium`}>
-                                  {detail}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
+                       <div 
+                        className="details-container grid" 
+                        style={{ gridTemplateRows: '0fr' }}
+                      >
+                        <div className="details-content overflow-hidden opacity-0" style={{ transform: 'translateY(-15px)' }}>
+                          <div className="bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm mt-4">
+                            <ul className="space-y-3">
+                              {step.details.map((detail, idx) => (
+                                <li key={idx} className={`flex items-center text-sm text-gray-300 ${ index % 2 === 0 ? 'lg:justify-end' : '' }`}>
+                                  <div className={`w-2 h-2 bg-gradient-to-r ${step.color} rounded-full ${ index % 2 === 0 ? 'lg:order-2 lg:ml-3 mr-3' : 'mr-3' } animate-pulse`}></div>
+                                  <span className={`${index % 2 === 0 ? 'lg:text-right' : ''} font-medium`}>{detail}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         </div>
                       </div>
-
-                      {/* Status indicator */}
-                      <div className={`flex items-center justify-between mt-6 ${
+                      
+                       <div className={`flex items-center justify-between mt-6 ${
                         index % 2 === 0 ? 'lg:flex-row-reverse' : ''
                       }`}>
                         <div className={`flex items-center text-sm font-medium ${
@@ -292,18 +308,8 @@ export default function Process() {
                         } ${index % 2 === 0 ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
-
-                    {/* Animated border glow */}
-                    {index === activeStep && (
-                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 animate-pulse"></div>
-                    )}
-
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none shimmer-bg"></div>
                   </div>
                 </div>
-
-                {/* Mobile number badge */}
                 <div className="lg:hidden flex items-center mb-4">
                   <div className={`bg-gradient-to-br ${step.color} text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm mr-4 shadow-lg`}>
                     {index + 1}
@@ -315,7 +321,7 @@ export default function Process() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx='true'>{`
         
         
         @keyframes float {

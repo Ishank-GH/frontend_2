@@ -211,7 +211,6 @@ export default function Services() {
 
   return (
     <section ref={sectionRef} id="services" className="py-20 relative overflow-hidden min-h-screen bg-black bg-gradient-to-br from-black via-gray-900 to-black">
-      {/* === UNIFIED BACKGROUND START === */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-black via-gray-900 to-black"></div>
       <div className="absolute inset-0 -z-10 opacity-30 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
@@ -224,7 +223,6 @@ export default function Services() {
           backgroundSize: '50px 50px'
         }}></div>
       </div>
-      {/* === UNIFIED BACKGROUND END === */}
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
         <div className="text-center mb-16 sm:mb-20 px-4">
@@ -239,7 +237,6 @@ export default function Services() {
             From concept to launch and beyond, we've got you covered.
           </p>
         </div>
-        {/* Main Packages Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 mb-20 sm:mb-24">
           {services.map((service, index) => (
             <div
@@ -314,8 +311,8 @@ export default function Services() {
         {/* Support Packages Section */}
         <div className="mt-20 support-packages-section">
           <div className="text-center mb-16">
-            <h3 className="support-title-h3 h-14 text-4xl md:text-5xl font-bold text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text mb-1">
-              Ongoing Support Packages
+ <h3 className="support-title-h3 text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text leading-tight py-2">
+                Ongoing Support Packages
             </h3>
             <p className="support-title-p text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Keep your website running smoothly with our comprehensive support plans
